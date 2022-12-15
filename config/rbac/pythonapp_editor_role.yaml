@@ -1,0 +1,31 @@
+# permissions for end users to edit pythonapps.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: pythonapp-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: go-operator
+    app.kubernetes.io/part-of: go-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pythonapp-editor-role
+rules:
+- apiGroups:
+  - test.example.com
+  resources:
+  - pythonapps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - test.example.com
+  resources:
+  - pythonapps/status
+  verbs:
+  - get

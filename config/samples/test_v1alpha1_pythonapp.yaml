@@ -1,0 +1,14 @@
+apiVersion: test.example.com/v1alpha1
+kind: PythonApp
+metadata:
+  labels:
+    app.kubernetes.io/name: pythonapp
+    app.kubernetes.io/instance: pythonapp-sample
+    app.kubernetes.io/part-of: go-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: go-operator
+  name: pythonapp-sample
+spec:
+  # TODO(user): Add fields here
+  replicas: 3
+  image: quay.io/vishwajitdandage/my-app
