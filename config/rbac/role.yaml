@@ -1,0 +1,69 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: go-operator-manager-role
+rules:
+- apiGroups:
+    - ""
+  resources:
+    - secrets
+    - pods
+    - pods/exec
+    - pods/log
+    - services
+    - services/finalizers
+    - endpoints
+    - persistentvolumeclaims
+    - events
+    - configmaps
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+    - apps
+  resources:
+    - deployments
+    - daemonsets
+    - replicasets
+    - statefulsets
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+  - test.example.com
+  resources:
+  - pythonapps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - test.example.com
+  resources:
+  - pythonapps/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - test.example.com
+  resources:
+  - pythonapps/status
+  verbs:
+  - get
+  - patch
+  - update

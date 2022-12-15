@@ -10,5 +10,5 @@ metadata:
   name: pythonapp-sample
 spec:
   # TODO(user): Add fields here
-  replicas: 3
+  replicas: 2
   image: quay.io/vishwajitdandage/my-app

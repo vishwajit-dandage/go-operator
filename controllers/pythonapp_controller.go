@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -35,7 +36,7 @@ import (
 	testv1alpha1 "github.com/vishwajitdandage/go-operator/api/v1alpha1"
 )
 
-var log = logf.Log.WithName("controller_traveller")
+var _log = logf.Log.WithName("controller_traveller")
 
 // PythonAppReconciler reconciles a PythonApp object
 type PythonAppReconciler struct {
@@ -68,7 +69,7 @@ func (r *PythonAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	var result *ctrl.Result
 
-	result, err = r.ensureDeployment(req, appInstance, r.createDeployment())
+	result, err = r.ensureDeployment(req, appInstance, r.createDeployment(appInstance))
 	if result != nil {
 		return *result, err
 	}
@@ -133,11 +134,11 @@ func (r *PythonAppReconciler) ensureDeployment(req reconcile.Request, app *testv
 	found := &appsv1.Deployment{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: app.Namespace}, found)
 	if err != nil && k8serros.IsNotFound(err) {
-		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		_log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.Client.Create(context.TODO(), dep)
 		if err != nil {
 			// Deployment failed
-			log.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			_log.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 			return &reconcile.Result{}, err
 		} else {
 			// Deployment was successful
@@ -145,7 +146,7 @@ func (r *PythonAppReconciler) ensureDeployment(req reconcile.Request, app *testv
 		}
 	} else if err != nil {
 		// Error that isn't due to the deployment not existing
-		log.Error(err, "Failed to get Deployment")
+		_log.Error(err, "Failed to get Deployment")
 		return &reconcile.Result{}, err
 	}
 	return nil, nil
