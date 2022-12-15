@@ -135,6 +135,18 @@ func (r *PythonAppReconciler) ensureDeployment(req reconcile.Request, app *testv
 	if err != nil && k8serros.IsNotFound(err) {
 		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.Client.Create(context.TODO(), dep)
+		if err != nil {
+			// Deployment failed
+			log.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			return &reconcile.Result{}, err
+		} else {
+			// Deployment was successful
+			return nil, nil
+		}
+	} else if err != nil {
+		// Error that isn't due to the deployment not existing
+		log.Error(err, "Failed to get Deployment")
+		return &reconcile.Result{}, err
 	}
-
+	return nil, nil
 }
