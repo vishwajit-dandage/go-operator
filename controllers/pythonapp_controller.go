@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -69,7 +70,12 @@ func (r *PythonAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	var result *ctrl.Result
 
-	result, err = r.ensureDeployment(req, appInstance, r.createDeployment(appInstance))
+	result, err = r.reconcileDeployment(req, appInstance, r.createDeployment(appInstance))
+	if result != nil {
+		return *result, err
+	}
+
+	result, err = r.reconcileService(req, appInstance, r.createService(appInstance))
 	if result != nil {
 		return *result, err
 	}
@@ -94,20 +100,20 @@ func (r *PythonAppReconciler) createDeployment(app *testv1alpha1.PythonApp) *app
 			Name:      "python-app",
 			Namespace: app.Namespace,
 			Labels: map[string]string{
-				"app": "demo",
+				"app": "flaskcalculator",
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": "demo",
+					"app": "flaskcalculator",
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": "demo",
+						"app": "flaskcalculator",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -128,8 +134,8 @@ func (r *PythonAppReconciler) createDeployment(app *testv1alpha1.PythonApp) *app
 	return dep
 }
 
-// Ensure Deployment
-func (r *PythonAppReconciler) ensureDeployment(req reconcile.Request, app *testv1alpha1.PythonApp, dep *appsv1.Deployment) (*ctrl.Result, error) {
+// Reconcile Deployment
+func (r *PythonAppReconciler) reconcileDeployment(req reconcile.Request, app *testv1alpha1.PythonApp, dep *appsv1.Deployment) (*ctrl.Result, error) {
 
 	found := &appsv1.Deployment{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: app.Namespace}, found)
@@ -147,6 +153,54 @@ func (r *PythonAppReconciler) ensureDeployment(req reconcile.Request, app *testv
 	} else if err != nil {
 		// Error that isn't due to the deployment not existing
 		_log.Error(err, "Failed to get Deployment")
+		return &reconcile.Result{}, err
+	}
+	return nil, nil
+}
+
+func (r *PythonAppReconciler) createService(app *testv1alpha1.PythonApp) *corev1.Service {
+
+	labels := map[string]string{
+		"app": "flaskcalculator",
+	}
+	s := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "flaskservice",
+			Namespace: app.Namespace,
+			Labels:    labels,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: labels,
+			Ports: []corev1.ServicePort{{
+				Protocol:   corev1.ProtocolTCP,
+				Port:       5000,
+				TargetPort: intstr.FromInt(5000),
+			}},
+			Type: corev1.ServiceTypeNodePort,
+		},
+	}
+	return s
+}
+
+// Reconcile Service
+func (r *PythonAppReconciler) reconcileService(req reconcile.Request, app *testv1alpha1.PythonApp, svc *corev1.Service) (*ctrl.Result, error) {
+
+	found := &corev1.Service{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: app.Namespace}, found)
+	if err != nil && k8serros.IsNotFound(err) {
+		_log.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		err = r.Client.Create(context.TODO(), svc)
+		if err != nil {
+			// Service failed
+			_log.Error(err, "Failed to create new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+			return &reconcile.Result{}, err
+		} else {
+			// Service was successful
+			return nil, nil
+		}
+	} else if err != nil {
+		// Error that isn't due to the Service not existing
+		_log.Error(err, "Failed to get Service")
 		return &reconcile.Result{}, err
 	}
 	return nil, nil
