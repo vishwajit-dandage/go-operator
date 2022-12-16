@@ -117,7 +117,6 @@ func (r *PythonAppReconciler) createDeployment(app *testv1alpha1.PythonApp) *app
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "controller-manager",
 					Containers: []corev1.Container{
 						{
 							Image: image,
